@@ -86,21 +86,20 @@ class HangmanApi(remote.Service):
         if game.game_over:
             return game.to_form('Game already over!')
 
-        if request.guess == "g":
-          msg = "you win"
-          game.put()
-          return game.to_form(msg)
-        # game.attempts_remaining -= 1
+        game.attempts_remaining -= 1
 
-        # target_word_char_list = list(game.target_word)
-        # return game.to_form("target_word_char_list")
-        # # if request.guess in target_word_char_list:
-        # #     msg = 'You guessed a letter correctly!'
-        # #     return game.to_form(msg)
+        # if request.guess == "g":
+        #   msg = "you win"
+        #   game.put()
+        #   return game.to_form(msg)
 
-        # #     #   Letter ' + game.guess + 
-        # #     # ' is letter number ' + target_word_char_list.index(game.guess) + 'out of' +
-        # #     # len(game.target_word))
+        target_word_char_list = list(game.target_word)
+        if request.guess in target_word_char_list:
+            msg = 'You guessed a letter correctly!'
+            game.put()
+            return game.to_form(msg)
+
+ #Letter ' + request.guess + ' is letter number ' + target_word_char_list.index(request.guess) + ' out of' + len(game.target_word))
 
         # # if request.guess == game.target_word:
         # #     game.end_game(True)
