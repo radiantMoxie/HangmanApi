@@ -33,7 +33,7 @@ class User(ndb.Model):
 
 class Game(ndb.Model):
     """Game object"""
-    attempts_allowed = ndb.IntegerProperty(required=True)
+    attempts_remaining = ndb.IntegerProperty(required=True)
     wrong_guesses_remaining = ndb.IntegerProperty(required=True)
     target_word = ndb.StringProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
@@ -44,7 +44,7 @@ class Game(ndb.Model):
         """Creates and returns a new game"""
         game = Game(user=user,
                     target_word=random.choice(words),
-                    attempts_allowed=100,
+                    attempts_remaining=100,
                     wrong_guesses_remaining=5,
                     game_over=False)
         game.put()
@@ -54,11 +54,12 @@ class Game(ndb.Model):
         """Returns a GameForm representation of the Game"""
         form = GameForm()
         form.urlsafe_key = self.key.urlsafe()
-        form.user_name = self.user.get().name
         form.wrong_guesses_remaining = self.wrong_guesses_remaining
         form.game_over = self.game_over
         form.message = message
+        form.user_name = self.user.get().name
         form.target_word= self.target_word
+        form.attempts_remaining = self.attempts_remaining
         return form
 
     def end_game(self, won=False):
@@ -68,7 +69,7 @@ class Game(ndb.Model):
         self.put()
         # Add the game to the score 'board'
         score = Score(user=self.user, date=date.today(), won=won,
-                      guesses=self.attempts_allowed - self.attempts_remaining)
+                      guesses=self.attempts_remaining - self.attempts_remaining)
         score.put()
 
 
@@ -92,6 +93,7 @@ class GameForm(messages.Message):
     message = messages.StringField(4, required=True)
     user_name = messages.StringField(5, required=True)
     target_word = messages.StringField(6, required=True)
+    attempts_remaining = messages.IntegerField(7, required=True)
 
 
 class NewGameForm(messages.Message):
@@ -101,7 +103,7 @@ class NewGameForm(messages.Message):
 
 class MakeMoveForm(messages.Message):
     """Used to make a move in an existing game"""
-    guess = messages.IntegerField(1, required=True)
+    guess = messages.StringField(1, required=True)
 
 
 class ScoreForm(messages.Message):
