@@ -84,7 +84,7 @@ class HangmanApi(remote.Service):
         """Makes a move. Returns a game state with message"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game.game_over:
-            return game.to_form('Game already over!')
+            return game.to_form('Game already over! The word was ' + game.target_word)
 
         game.attempts_remaining -= 1
 
@@ -95,7 +95,14 @@ class HangmanApi(remote.Service):
 
         target_word_char_list = list(game.target_word)
         if request.guess in target_word_char_list:
-            msg = ('You guessed a letter correctly! Letter ' + str(request.guess) + ' is letter number ' + str(target_word_char_list.index(request.guess) + 1) + ' out of ' + str(len(game.target_word)))
+            game.guesses += request.guess
+            msg = ('You guessed a letter correctly! Letter ' + request.guess + ' is letter number ' + str(target_word_char_list.index(request.guess) + 1) + ' out of ' + str(len(game.target_word)))
+            game.put()
+            return game.to_form(msg)
+        else:
+            game.guesses += request.guess
+            msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word.')
+            game.wrong_guesses_remaining -= 1
             game.put()
             return game.to_form(msg)
 

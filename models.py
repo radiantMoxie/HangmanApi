@@ -7,6 +7,7 @@ from datetime import date
 from protorpc import messages
 from google.appengine.ext import ndb
 
+#word list of common English words from http://www.manythings.org/vocabulary/lists/l/words.php?f=noll15
 words = ['acres','adult','advice','arrangement','attempt','August',
 'Autumn','border','breeze','brick','calm','canal','Casey','cast','chose',
 'claws','coach','constantly','contrast','cookies','customs','damage',
@@ -33,11 +34,13 @@ class User(ndb.Model):
 
 class Game(ndb.Model):
     """Game object"""
+    user = ndb.KeyProperty(required=True, kind='User')
+    target_word = ndb.StringProperty(required=True)
     attempts_remaining = ndb.IntegerProperty(required=True)
     wrong_guesses_remaining = ndb.IntegerProperty(required=True)
-    target_word = ndb.StringProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
-    user = ndb.KeyProperty(required=True, kind='User')
+    guesses = ndb.StringProperty()
+
 
     @classmethod
     def new_game(cls, user):
@@ -45,8 +48,9 @@ class Game(ndb.Model):
         game = Game(user=user,
                     target_word=random.choice(words),
                     attempts_remaining=100,
-                    wrong_guesses_remaining=5,
-                    game_over=False)
+                    wrong_guesses_remaining=6,
+                    game_over=False,
+                    guesses = "")
         game.put()
         return game
 
