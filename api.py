@@ -95,11 +95,11 @@ class HangmanApi(remote.Service):
 
         target_word_char_list = list(game.target_word)
         if request.guess in target_word_char_list:
-            msg = 'You guessed a letter correctly!'
+            msg = ('You guessed a letter correctly! Letter ' + str(request.guess) + ' is letter number ' + str(target_word_char_list.index(request.guess) + 1) + ' out of ' + str(len(game.target_word)))
             game.put()
             return game.to_form(msg)
 
- #Letter ' + request.guess + ' is letter number ' + target_word_char_list.index(request.guess) + ' out of' + len(game.target_word))
+ 
 
         # # if request.guess == game.target_word:
         # #     game.end_game(True)
