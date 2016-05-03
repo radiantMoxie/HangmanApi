@@ -60,7 +60,7 @@ class HangmanApi(remote.Service):
         # This operation is not needed to complete the creation of a new game
         # so it is performed out of sequence.
         taskqueue.add(url='/tasks/cache_average_attempts')
-        return game.to_form('Good luck playing Hangman!')
+        return game.to_form('Good luck playing Hangman! Your word has ' + str(len(game.target_word)) + ' letters.')
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
@@ -83,30 +83,45 @@ class HangmanApi(remote.Service):
     def make_move(self, request):
         """Makes a move. Returns a game state with message"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
+
+        # if game.word_so_far == "":
+        #     game.word_so_far += ("_ " * len(game.target_word)).strip()
+
         if game.game_over:
             return game.to_form('Game already over! The word was ' + game.target_word)
 
         game.attempts_remaining -= 1
 
-        # if request.guess == "g":
-        #   msg = "you win"
-        #   game.put()
-        #   return game.to_form(msg)
-
         target_word_char_list = list(game.target_word)
         if request.guess in target_word_char_list:
-            game.guesses += request.guess
+            game.correct_guesses += request.guess
+
+            # Replace underscores in word_so_far with correctly guessed letters
+            for i in range(len(game.target_word)):
+              if game.target_word[i] in game.correct_guesses:
+                game.word_so_far = game.word_so_far[:i] + game.target_word[i] + game.word_so_far[i+1:]
+
             msg = ('You guessed a letter correctly! Letter ' + request.guess + ' is letter number ' + str(target_word_char_list.index(request.guess) + 1) + ' out of ' + str(len(game.target_word)))
             game.put()
             return game.to_form(msg)
         else:
-            game.guesses += request.guess
+            game.wrong_guesses += request.guess
             msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word.')
             game.wrong_guesses_remaining -= 1
             game.put()
             return game.to_form(msg)
 
- 
+        # if request.guess in game.target_word:
+        #   game.guesses += request.guess
+
+        #   game.put()
+        #   return game.to_form('You guessed a letter correctly!')
+        # else:
+        #     game.guesses += request.guess
+        #     msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word.')
+        #     game.wrong_guesses_remaining -= 1
+        #     game.put()
+        #     return game.to_form(msg)
 
         # # if request.guess == game.target_word:
         # #     game.end_game(True)
@@ -117,12 +132,12 @@ class HangmanApi(remote.Service):
         # # else:
         # #     msg = 'Too high!'
 
-        # # if game.attempts_remaining < 1:
-        # #     game.end_game(False)
-        # #     return game.to_form(msg + ' Game over!')
-        # # else:
-        # #     game.put()
-        # #     return game.to_form(msg)
+        # if game.wrong_guesses_remaining < 1:
+        #     game.end_game(False)
+        #     return game.to_form(msg + ' Game over!')
+        # else:
+        #     game.put()
+        #     return game.to_form(msg)
 
     @endpoints.method(response_message=ScoreForms,
                       path='scores',

@@ -8,17 +8,17 @@ from protorpc import messages
 from google.appengine.ext import ndb
 
 #word list of common English words from http://www.manythings.org/vocabulary/lists/l/words.php?f=noll15
-words = ['acres','adult','advice','arrangement','attempt','August',
-'Autumn','border','breeze','brick','calm','canal','Casey','cast','chose',
+words = ['acres','adult','advice','arrangement','attempt',
+'autumn','border','breeze','brick','calm','canal','cast','chose',
 'claws','coach','constantly','contrast','cookies','customs','damage',
-'Danny','deeply','depth','discussion','doll','donkey','Egypt','Ellen',
+'deeply','depth','discussion','doll','donkey',
 'essential','exchange','exist','explanation','facing','film','finest',
 'fireplace','floating','folks','fort','garage','grabbed','grandmother','habit',
-'happily','Harry','heading','hunter','Illinois','image','independent',
-'instant','January','kids','label','Lee','lungs','manufacturing','Martin',
-'mathematics','melted','memory','mill','mission','monkey','Mount','mysterious',
-'neighborhood','Norway','nuts','occasionally','official','ourselves','palace',
-'Pennsylvania','Philadelphia','plates','poetry','policeman','positive',
+'happily','Harry','heading','hunter','image','independent',
+'instant','kids','label','Lee','lungs','manufacturing',
+'mathematics','melted','memory','mill','mission','monkey','mysterious',
+'neighborhood','nuts','occasionally','official','ourselves','palace',
+'plates','poetry','policeman','positive',
 'possibly','practical','pride','promised','recall','relationship','remarkable',
 'require','rhyme','rocky','rubbed','rush','sale','satellites','satisfied',
 'scared','selection','shake','shaking','shallow','shout','silly','simplest',
@@ -39,7 +39,8 @@ class Game(ndb.Model):
     attempts_remaining = ndb.IntegerProperty(required=True)
     wrong_guesses_remaining = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
-    guesses = ndb.StringProperty()
+    correct_guesses = ndb.StringProperty()
+    word_so_far = ndb.StringProperty()
 
 
     @classmethod
@@ -50,7 +51,8 @@ class Game(ndb.Model):
                     attempts_remaining=100,
                     wrong_guesses_remaining=6,
                     game_over=False,
-                    guesses = "")
+                    correct_guesses = "")
+        game.word_so_far = ("_" * len(game.target_word))
         game.put()
         return game
 
@@ -63,6 +65,7 @@ class Game(ndb.Model):
         form.message = message
         form.user_name = self.user.get().name
         form.target_word= self.target_word
+        form.word_so_far = self.word_so_far
         form.attempts_remaining = self.attempts_remaining
         return form
 
@@ -98,6 +101,7 @@ class GameForm(messages.Message):
     user_name = messages.StringField(5, required=True)
     target_word = messages.StringField(6, required=True)
     attempts_remaining = messages.IntegerField(7, required=True)
+    word_so_far = messages.StringField(8)
 
 
 class NewGameForm(messages.Message):
