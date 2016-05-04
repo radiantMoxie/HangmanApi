@@ -36,7 +36,7 @@ class Game(ndb.Model):
     """Game object"""
     user = ndb.KeyProperty(required=True, kind='User')
     target_word = ndb.StringProperty(required=True)
-    attempts_remaining = ndb.IntegerProperty(required=True)
+    attempts = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
     correct_guesses = ndb.StringProperty()
     wrong_guesses = ndb.StringProperty()
@@ -48,11 +48,11 @@ class Game(ndb.Model):
         """Creates and returns a new game"""
         game = Game(user=user,
                     target_word=random.choice(words),
-                    attempts_remaining=100,
+                    attempts=0,
                     game_over=False,
                     correct_guesses = "",
                     wrong_guesses = "")
-        game.word_so_far = ("_" * len(game.target_word))
+        game.word_so_far = ("-" * len(game.target_word))
         game.put()
         return game
 
@@ -64,7 +64,7 @@ class Game(ndb.Model):
         form.message = message
         form.user_name = self.user.get().name
         form.word_so_far = self.word_so_far
-        form.attempts_remaining = self.attempts_remaining
+        form.attempts = self.attempts
         return form
 
     def end_game(self, won=False):
@@ -96,7 +96,7 @@ class GameForm(messages.Message):
     game_over = messages.BooleanField(2, required=True)
     message = messages.StringField(3, required=True)
     user_name = messages.StringField(4, required=True)
-    attempts_remaining = messages.IntegerField(5, required=True)
+    attempts = messages.IntegerField(5, required=True)
     word_so_far = messages.StringField(6)
 
 

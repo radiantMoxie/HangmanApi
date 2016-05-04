@@ -87,7 +87,18 @@ class HangmanApi(remote.Service):
         if game.game_over:
             return game.to_form('Game already over! The word was ' + game.target_word)
 
-        game.attempts_remaining -= 1
+        #ensure guess is lowercase since all target_words are lowercase
+        request.guess = request.guess.lower()
+
+        #Handle illegal moves
+        if len(request.guess) != 1:
+          return game.to_form('Please only enter a single letter.')
+        elif request.guess in game.wrong_guesses or request.guess in game.correct_guesses:
+          return game.to_form('You have already guessed ' + request.guess + '! Please guess a new letter.')
+        elif request.guess not in "abcdefghijklmnopqrstuvwxyz":
+          return game.to_form('Only letters are allowed as guesses!')
+
+        game.attempts += 1
 
         if request.guess in game.target_word:
             game.correct_guesses += request.guess
@@ -102,31 +113,13 @@ class HangmanApi(remote.Service):
             return game.to_form(msg)
         else:
             game.wrong_guesses += request.guess
-            msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word. You have ' + str((6 - len(game.wrong_guesses))) + ' guess(es) remaining.')
-            game.put()
-            return game.to_form(msg)
-# this code will never get hit--uppercode will say 0 guesses but never execute below
-        if len(game.wrong_guesses) > 5:
-          return game.to_form("You lose!")
+            if len(game.wrong_guesses) > 5:
+              return game.to_form("You lose!The word was " + game.target_word)
+            else:
+              msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word. You are ' + str((6 - len(game.wrong_guesses))) + ' wrong guess(es) from HANGMAN.')
+              game.put()
+              return game.to_form(msg)
 
-        # if request.guess in game.target_word:
-        #   game.guesses += request.guess
-
-        #   game.put()
-        #   return game.to_form('You guessed a letter correctly!')
-        # else:
-        #     game.guesses += request.guess
-        #     msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word.')
-        #     game.wrong_guesses_remaining -= 1
-        #     game.put()
-        #     return game.to_form(msg)
-
-        # if game.wrong_guesses_remaining < 1:
-        #     game.end_game(False)
-        #     return game.to_form(msg + ' Game over!')
-        # else:
-        #     game.put()
-        #     return game.to_form(msg)
 
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
