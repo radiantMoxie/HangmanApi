@@ -37,9 +37,9 @@ class Game(ndb.Model):
     user = ndb.KeyProperty(required=True, kind='User')
     target_word = ndb.StringProperty(required=True)
     attempts_remaining = ndb.IntegerProperty(required=True)
-    wrong_guesses_remaining = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
     correct_guesses = ndb.StringProperty()
+    wrong_guesses = ndb.StringProperty()
     word_so_far = ndb.StringProperty()
 
 
@@ -49,9 +49,9 @@ class Game(ndb.Model):
         game = Game(user=user,
                     target_word=random.choice(words),
                     attempts_remaining=100,
-                    wrong_guesses_remaining=6,
                     game_over=False,
-                    correct_guesses = "")
+                    correct_guesses = "",
+                    wrong_guesses = "")
         game.word_so_far = ("_" * len(game.target_word))
         game.put()
         return game
@@ -60,11 +60,9 @@ class Game(ndb.Model):
         """Returns a GameForm representation of the Game"""
         form = GameForm()
         form.urlsafe_key = self.key.urlsafe()
-        form.wrong_guesses_remaining = self.wrong_guesses_remaining
         form.game_over = self.game_over
         form.message = message
         form.user_name = self.user.get().name
-        form.target_word= self.target_word
         form.word_so_far = self.word_so_far
         form.attempts_remaining = self.attempts_remaining
         return form
@@ -95,13 +93,11 @@ class Score(ndb.Model):
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
     urlsafe_key = messages.StringField(1, required=True)
-    wrong_guesses_remaining = messages.IntegerField(2, required=True, default=6)
-    game_over = messages.BooleanField(3, required=True)
-    message = messages.StringField(4, required=True)
-    user_name = messages.StringField(5, required=True)
-    target_word = messages.StringField(6, required=True)
-    attempts_remaining = messages.IntegerField(7, required=True)
-    word_so_far = messages.StringField(8)
+    game_over = messages.BooleanField(2, required=True)
+    message = messages.StringField(3, required=True)
+    user_name = messages.StringField(4, required=True)
+    attempts_remaining = messages.IntegerField(5, required=True)
+    word_so_far = messages.StringField(6)
 
 
 class NewGameForm(messages.Message):

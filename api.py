@@ -84,16 +84,12 @@ class HangmanApi(remote.Service):
         """Makes a move. Returns a game state with message"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
 
-        # if game.word_so_far == "":
-        #     game.word_so_far += ("_ " * len(game.target_word)).strip()
-
         if game.game_over:
             return game.to_form('Game already over! The word was ' + game.target_word)
 
         game.attempts_remaining -= 1
 
-        target_word_char_list = list(game.target_word)
-        if request.guess in target_word_char_list:
+        if request.guess in game.target_word:
             game.correct_guesses += request.guess
 
             # Replace underscores in word_so_far with correctly guessed letters
@@ -101,15 +97,17 @@ class HangmanApi(remote.Service):
               if game.target_word[i] in game.correct_guesses:
                 game.word_so_far = game.word_so_far[:i] + game.target_word[i] + game.word_so_far[i+1:]
 
-            msg = ('You guessed a letter correctly! Letter ' + request.guess + ' is letter number ' + str(target_word_char_list.index(request.guess) + 1) + ' out of ' + str(len(game.target_word)))
+            msg = ('You guessed correctly!')
             game.put()
             return game.to_form(msg)
         else:
             game.wrong_guesses += request.guess
-            msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word.')
-            game.wrong_guesses_remaining -= 1
+            msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word. You have ' + str((6 - len(game.wrong_guesses))) + ' guess(es) remaining.')
             game.put()
             return game.to_form(msg)
+# this code will never get hit--uppercode will say 0 guesses but never execute below
+        if len(game.wrong_guesses) > 5:
+          return game.to_form("You lose!")
 
         # if request.guess in game.target_word:
         #   game.guesses += request.guess
@@ -122,15 +120,6 @@ class HangmanApi(remote.Service):
         #     game.wrong_guesses_remaining -= 1
         #     game.put()
         #     return game.to_form(msg)
-
-        # # if request.guess == game.target_word:
-        # #     game.end_game(True)
-        # #     return game.to_form('You win!')
-
-        # # # if request.guess < game.target:
-        # #     msg = 'Too low!'
-        # # else:
-        # #     msg = 'Too high!'
 
         # if game.wrong_guesses_remaining < 1:
         #     game.end_game(False)
