@@ -38,8 +38,7 @@ class Game(ndb.Model):
     target_word = ndb.StringProperty(required=True)
     attempts = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
-    correct_guesses = ndb.StringProperty()
-    wrong_guesses = ndb.StringProperty()
+    guesses = ndb.StringProperty()
     word_so_far = ndb.StringProperty()
 
 
@@ -50,8 +49,7 @@ class Game(ndb.Model):
                     target_word=random.choice(words),
                     attempts=0,
                     game_over=False,
-                    correct_guesses = "",
-                    wrong_guesses = "")
+                    guesses = "")
         game.word_so_far = ("-" * len(game.target_word))
         game.put()
         return game
@@ -74,7 +72,7 @@ class Game(ndb.Model):
         self.put()
         # Add the game to the score 'board'
         score = Score(user=self.user, date=date.today(), won=won,
-                      guesses=self.attempts_remaining - self.attempts_remaining)
+                      guesses=self.attempts)
         score.put()
 
 

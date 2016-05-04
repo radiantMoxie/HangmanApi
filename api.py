@@ -87,16 +87,30 @@ class HangmanApi(remote.Service):
         if game.game_over:
             return game.to_form('Game already over! The word was ' + game.target_word)
 
-        #ensure guess is lowercase since all target_words are lowercase
+        
+
+        #Ensures guess is lowercase since all target_words are lowercase
         request.guess = request.guess.lower()
 
-        #Handle illegal moves
+        #Allows guessing of entire word but only counts as one attempt
+        #Doesn't provide feedback about individual correct letters to dissuade cheating
+        if request.guess == game.target_word:
+            game.attempts += 1
+            game.end_game(True)
+            game.put()
+            return game.to_form('You win!')
+        elif len(request.guess) == len(game.target_word):
+            game.attempts += 1
+            game.put()
+            return game.to_form("That's not the correct word!")
+
+        #Handles illegal moves, doesn't add to attempt count
         if len(request.guess) != 1:
-          return game.to_form('Please only enter a single letter.')
+            return game.to_form('Please only enter a single letter.')
         elif request.guess in game.guesses:
-          return game.to_form('You have already guessed ' + request.guess + '! Please guess a new letter.')
+            return game.to_form('You have already guessed ' + request.guess + '! Please guess a new letter.')
         elif request.guess not in "abcdefghijklmnopqrstuvwxyz":
-          return game.to_form('Only letters are allowed as guesses!')
+            return game.to_form('Only letters are allowed as guesses!')
 
         game.attempts += 1
         game.guesses += request.guess
@@ -116,6 +130,8 @@ class HangmanApi(remote.Service):
                 if game.guesses[i] not in game.target_word:
                     incorrect_guesses += 1
             if incorrect_guesses > 5:
+                game.end_game(False)
+                game.put()
                 return game.to_form("You lose!The word was " + game.target_word)
             else:
                 msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word. You are ' + str(6 - incorrect_guesses) + ' incorrect guess(es) from HANGMAN.')
