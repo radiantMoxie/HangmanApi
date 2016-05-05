@@ -178,13 +178,25 @@ class HangmanApi(remote.Service):
           items=[game.to_form(
             "User {}'s active games.".format(request.user_name)) for game in games])
 
-    @endpoints.method(response_message=StringMessage,
+    @endpoints.method(request_message= GET_GAME_REQUEST,
+                      response_message=StringMessage,
                       path='games/user/cancel_game',
                       name='cancel_game',
                       http_method='POST')
     def cancel_game(self, request):
-        "Cancel a game in progress"
-        return StringMessage(message='cancel_game')
+        "Cancel a game in progress and penalize player"
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game and not game.game_over:
+            game.attempts+=3
+            game.end_game(False)
+            game.key.delete()
+            return StringMessage(
+              message='Game with key{} has been cancelled and player penalized 3 points'.format(request.urlsafe_game_key))
+        elif game and game.game_over:
+            return StringMessage(
+              message='Game with key{} is already over!'.format(request.urlsafe_game_key))
+        else:
+          raise endpoints.NotFoundException('A game with this key was not found. It may have been cancelled.')
 
     @staticmethod
     def _cache_average_attempts():
