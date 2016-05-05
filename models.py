@@ -50,7 +50,7 @@ class Game(ndb.Model):
                     attempts=0,
                     game_over=False,
                     guesses = "")
-        game.word_so_far = ("-" * len(game.target_word))
+        game.word_so_far = ("*" * len(game.target_word))
         game.put()
         return game
 
@@ -96,6 +96,10 @@ class GameForm(messages.Message):
     user_name = messages.StringField(4, required=True)
     attempts = messages.IntegerField(5, required=True)
     word_so_far = messages.StringField(6)
+
+class GameForms(messages.Message):
+    """Return multiple GameForms"""
+    items = messages.MessageField(GameForm, 1, repeated=True)
 
 
 class NewGameForm(messages.Message):

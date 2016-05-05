@@ -9,8 +9,8 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 
 from models import User, Game, Score
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
-    ScoreForms
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm
+from models import GameForms, ScoreForms
 from utils import get_by_urlsafe
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
@@ -161,13 +161,30 @@ class HangmanApi(remote.Service):
         scores = Score.query(Score.user == user.key)
         return ScoreForms(items=[score.to_form() for score in scores])
 
-    @endpoints.method(response_message=StringMessage,
-                      path='games/average_attempts',
-                      name='get_average_attempts_remaining',
+    @endpoints.method(request_message=USER_REQUEST,
+                      response_message=GameForms,
+                      path='games/user/{user_name}',
+                      name='get_user_games',
                       http_method='GET')
-    def get_average_attempts(self, request):
-        """Get the cached average moves remaining"""
-        return StringMessage(message=memcache.get(MEMCACHE_MOVES_REMAINING) or '')
+    def get_user_games(self, request):
+        """Get an individual user's current games"""
+        user = User.query(User.name == request.user_name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                    'A User with that name does not exist!')
+        games = Game.query(Game.user == user.key)
+        games = games.filter(Game.game_over == False)
+        return GameForms(
+          items=[game.to_form(
+            "User {}'s active games.".format(request.user_name)) for game in games])
+
+    @endpoints.method(response_message=StringMessage,
+                      path='games/user/cancel_game',
+                      name='cancel_game',
+                      http_method='POST')
+    def cancel_game(self, request):
+        "Cancel a game in progress"
+        return StringMessage(message='cancel_game')
 
     @staticmethod
     def _cache_average_attempts():
