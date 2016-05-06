@@ -21,8 +21,10 @@ MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1),)
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
+GET_LOW_SCORES_REQUEST = endpoints.ResourceContainer(
+        number_of_results = messages.IntegerField(1),)
 
-MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
+# MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
 
 @endpoints.api(name='hangman', version='v1')
 class HangmanApi(remote.Service):
@@ -68,7 +70,7 @@ class HangmanApi(remote.Service):
                       name='get_game',
                       http_method='GET')
     def get_game(self, request):
-        """Return the current game state."""
+        """Return the current game state"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game:
             return game.to_form('Time to make a move!')
@@ -184,7 +186,7 @@ class HangmanApi(remote.Service):
                       name='cancel_game',
                       http_method='POST')
     def cancel_game(self, request):
-        "Cancel a game in progress and penalize player"
+        """Cancel a game in progress and penalize player"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game and not game.game_over:
             game.attempts+=3
@@ -198,17 +200,30 @@ class HangmanApi(remote.Service):
         else:
           raise endpoints.NotFoundException('A game with this key was not found. It may have been cancelled.')
 
-    @staticmethod
-    def _cache_average_attempts():
-        """Populates memcache with the average moves remaining of Games"""
-        games = Game.query(Game.game_over == False).fetch()
-        if games:
-            count = len(games)
-            total_attempts_remaining = sum([game.attempts_remaining
-                                        for game in games])
-            average = float(total_attempts_remaining)/count
-            memcache.set(MEMCACHE_MOVES_REMAINING,
-                         'The average moves remaining is {:.2f}'.format(average))
+    @endpoints.method(request_message=GET_LOW_SCORES_REQUEST,
+                      response_message=ScoreForms,
+                      path='scores/low_scores',
+                      name='get_low_scores',
+                      http_method='GET')
+    def get_low_scores(self, request):
+        """Generate a list of low scores (best players) in ascending order"""
+        #Order scores from lowest number of guesses to highest
+        scores = Score.query().order(Score.guesses)
+        scores = scores.fetch(limit=request.number_of_results)
+        return ScoreForms(items=([score.to_form() for score in scores]))
+
+
+    # @staticmethod
+    # def _cache_average_attempts():
+    #     """Populates memcache with the average moves remaining of Games"""
+    #     games = Game.query(Game.game_over == False).fetch()
+    #     if games:
+    #         count = len(games)
+    #         total_attempts_remaining = sum([game.attempts_remaining
+    #                                     for game in games])
+    #         average = float(total_attempts_remaining)/count
+    #         memcache.set(MEMCACHE_MOVES_REMAINING,
+    #                      'The average moves remaining is {:.2f}'.format(average))
 
 
 api = endpoints.api_server([HangmanApi])
