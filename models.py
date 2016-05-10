@@ -14,8 +14,8 @@ words = ['acres','adult','advice','arrangement','attempt',
 'deeply','depth','discussion','doll','donkey',
 'essential','exchange','exist','explanation','facing','film','finest',
 'fireplace','floating','folks','fort','garage','grabbed','grandmother','habit',
-'happily','Harry','heading','hunter','image','independent',
-'instant','kids','label','Lee','lungs','manufacturing',
+'happily', 'heading','hunter','image','independent',
+'instant','kids','label','lungs','manufacturing',
 'mathematics','melted','memory','mill','mission','monkey','mysterious',
 'neighborhood','nuts','occasionally','official','ourselves','palace',
 'plates','poetry','policeman','positive',
@@ -23,14 +23,14 @@ words = ['acres','adult','advice','arrangement','attempt',
 'require','rhyme','rocky','rubbed','rush','sale','satellites','satisfied',
 'scared','selection','shake','shaking','shallow','shout','silly','simplest',
 'slight','slip','slope','soap','solar','species','spin','stiff','swung','tales',
-'thumb','tobacco','toy','trap','treated','tune','University','vapor','vessels',
+'thumb','tobacco','toy','trap','treated','tune','university','vapor','vessels',
 'wealth','wolf','zoo']
 
 class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty()
-    wins = ndb.IntegerProperty(default = 0.0)
+    wins = ndb.IntegerProperty(default = 0)
     guesses = ndb.IntegerProperty(default = 0)
     winning_percentage = ndb.FloatProperty(default = 0.0)
 
@@ -68,7 +68,7 @@ class Game(ndb.Model):
     target_word = ndb.StringProperty(required=True)
     attempts = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
-    guesses = ndb.StringProperty()
+    guesses = ndb.StringProperty() #Cast this to int?
     word_so_far = ndb.StringProperty()
 
 

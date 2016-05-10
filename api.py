@@ -24,8 +24,6 @@ USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
 GET_LOW_SCORES_REQUEST = endpoints.ResourceContainer(
         number_of_results = messages.IntegerField(1),)
 
-# MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
-
 @endpoints.api(name='hangman', version='v1')
 class HangmanApi(remote.Service):
     """Game API"""
@@ -61,7 +59,7 @@ class HangmanApi(remote.Service):
         # Use a task queue to update the average attempts remaining.
         # This operation is not needed to complete the creation of a new game
         # so it is performed out of sequence.
-        taskqueue.add(url='/tasks/cache_average_attempts')
+        #taskqueue.add(url='/tasks/cache_average_attempts')
         return game.to_form('Good luck playing Hangman! Your word has ' + str(len(game.target_word)) + ' letters.')
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
@@ -116,7 +114,7 @@ class HangmanApi(remote.Service):
         game.guesses += request.guess
 
         if request.guess in game.target_word:
-            # Replace hyphens in word_so_far with correctly guessed letters
+            # Replace asterisks in word_so_far with correctly guessed letters
             for i in range(len(game.target_word)):
                 if game.target_word[i] in game.guesses:
                     game.word_so_far = game.word_so_far[:i] + game.target_word[i] + game.word_so_far[i+1:]
@@ -209,6 +207,7 @@ class HangmanApi(remote.Service):
         scores = scores.fetch(limit=request.number_of_results)
         return ScoreForms(items=[score.to_form() for score in scores])
 
+
     @endpoints.method(response_message=UserForms,
                       path='users/rankings',
                       name='get_user_rankings',
@@ -220,7 +219,7 @@ class HangmanApi(remote.Service):
         for user in users:
           wins = 0
           guesses = 0
-          #Use .fetch() to turn query into an iterable list
+          #Use .fetch() to turn query into an iterable list you can take the len() of
           scores = Score.query(Score.user == user.key).fetch()
           for score in scores:
             guesses += score.guesses
@@ -228,6 +227,18 @@ class HangmanApi(remote.Service):
               wins += 1
           winning_percentage = 100 * wins/float(len(scores))
           items.append(user.to_form(wins, guesses, winning_percentage))
+        #Lambda defines nameless inline function
+        #items.sort(key=lambda u: u.winning_percentage, reverse = True)
+        #http://stackoverflow.com/questions/12749398/using-a-comparator-function-to-sort\
+        def _compare_user_games(a, b):
+          """Sort user rankings by winning_percentage, then # wins, then # guesses"""
+          if a.winning_percentage != b.winning_percentage:
+            return int(a.winning_percentage - b.winning_percentage)
+          elif a.wins != b.wins:
+            return int(a.wins - b.wins)
+          else:
+            return b.guesses - a.guesses
+        items = sorted(items, cmp = _compare_user_games, reverse = True)
         return UserForms(items=items)
 
     @endpoints.method(request_message=USER_REQUEST,
@@ -240,18 +251,6 @@ class HangmanApi(remote.Service):
         user = User.query(User.name == request.user_name).get()
         msg = user.winning_percentage()
         return StringMessage(message=msg)
-
-    # @staticmethod
-    # def _cache_average_attempts():
-    #     """Populates memcache with the average moves remaining of Games"""
-    #     games = Game.query(Game.game_over == False).fetch()
-    #     if games:
-    #         count = len(games)
-    #         total_attempts_remaining = sum([game.attempts_remaining
-    #                                     for game in games])
-    #         average = float(total_attempts_remaining)/count
-    #         memcache.set(MEMCACHE_MOVES_REMAINING,
-    #                      'The average moves remaining is {:.2f}'.format(average))
 
 
 api = endpoints.api_server([HangmanApi])
