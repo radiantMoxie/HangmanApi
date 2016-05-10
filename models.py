@@ -30,6 +30,36 @@ class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty()
+    wins = ndb.IntegerProperty(default = 0.0)
+    guesses = ndb.IntegerProperty(default = 0)
+    winning_percentage = ndb.FloatProperty(default = 0.0)
+
+    def to_form(self, wins, guesses, winning_percentage):
+        # return UserForm(user_name = self.name)
+        #                 # email = self.email,
+        #                 # wins = self.wins,
+        #                 # guesses = self.guesses,
+        #                 # winning_percentage = self.winning_percentage)
+        form = UserForm()
+        form.user_name = self.name
+        form.email = self.email
+        form.wins = wins
+        form.guesses = guesses
+        form.winning_percentage = winning_percentage
+        return form
+
+class UserForm(messages.Message):
+    """UserForm for outbound User information"""
+    user_name = messages.StringField(1, required=True)
+    wins = messages.IntegerField(2)
+    guesses = messages.IntegerField(3)
+    winning_percentage = messages.FloatField(4)
+    email = messages.StringField(5)
+
+
+class UserForms(messages.Message):
+    """Return multiple UserForms"""
+    items = messages.MessageField(UserForm, 1, repeated=True)
 
 
 class Game(ndb.Model):
@@ -88,6 +118,7 @@ class Score(ndb.Model):
                          date=str(self.date), guesses=self.guesses)
 
 
+
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
     urlsafe_key = messages.StringField(1, required=True)
@@ -96,6 +127,7 @@ class GameForm(messages.Message):
     user_name = messages.StringField(4, required=True)
     attempts = messages.IntegerField(5, required=True)
     word_so_far = messages.StringField(6)
+
 
 class GameForms(messages.Message):
     """Return multiple GameForms"""

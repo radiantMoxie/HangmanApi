@@ -9,8 +9,8 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 
 from models import User, Game, Score
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm
-from models import GameForms, ScoreForms
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, UserForm
+from models import GameForms, ScoreForms, UserForms
 from utils import get_by_urlsafe
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
@@ -88,8 +88,6 @@ class HangmanApi(remote.Service):
 
         if game.game_over:
             return game.to_form('Game already over! The word was ' + game.target_word)
-
-        
 
         #Ensures guess is lowercase since all target_words are lowercase
         request.guess = request.guess.lower()
@@ -206,12 +204,42 @@ class HangmanApi(remote.Service):
                       name='get_low_scores',
                       http_method='GET')
     def get_low_scores(self, request):
-        """Generate a list of low scores (best players) in ascending order"""
-        #Order scores from lowest number of guesses to highest
-        scores = Score.query().order(Score.guesses)
+        """Generate a list of low scores of won games in ascending order"""
+        scores = Score.query(Score.won == True).order(Score.guesses)
         scores = scores.fetch(limit=request.number_of_results)
-        return ScoreForms(items=([score.to_form() for score in scores]))
+        return ScoreForms(items=[score.to_form() for score in scores])
 
+    @endpoints.method(response_message=UserForms,
+                      path='users/rankings',
+                      name='get_user_rankings',
+                      http_method='GET')
+    def get_user_rankings(self, request):
+        """Get the rankings of each player"""
+        items = []
+        users = User.query()
+        for user in users:
+          wins = 0
+          guesses = 0
+          #Use .fetch() to turn query into an iterable list
+          scores = Score.query(Score.user == user.key).fetch()
+          for score in scores:
+            guesses += score.guesses
+            if score.won:
+              wins += 1
+          winning_percentage = 100 * wins/float(len(scores))
+          items.append(user.to_form(wins, guesses, winning_percentage))
+        return UserForms(items=items)
+
+    @endpoints.method(request_message=USER_REQUEST,
+                      response_message=StringMessage,
+                      path='test_method',
+                      name='test_method',
+                      http_method='GET')
+    def test_method(self, request):
+        """test_method"""
+        user = User.query(User.name == request.user_name).get()
+        msg = user.winning_percentage()
+        return StringMessage(message=msg)
 
     # @staticmethod
     # def _cache_average_attempts():
