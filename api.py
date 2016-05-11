@@ -10,7 +10,7 @@ from google.appengine.api import taskqueue
 
 from models import User, Game, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, UserForm
-from models import GameForms, ScoreForms, UserForms
+from models import GameForms, ScoreForms, UserForms, HistoryForm
 from utils import get_by_urlsafe
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
@@ -95,44 +95,52 @@ class HangmanApi(remote.Service):
         if request.guess == game.target_word:
             game.attempts += 1
             game.end_game(True)
+            msg = 'You win!'
+            game.history.append("(Guess: " + request.guess + ", Message: " + msg + ")")
             game.put()
-            return game.to_form('You win!')
+            return game.to_form(msg)
         elif len(request.guess) == len(game.target_word):
             game.attempts += 1
+            msg = "That's not the correct word!"
+            game.history.append(("(Guess: " + request.guess + ", Message: " + msg + ")").encode('utf-8'))
             game.put()
-            return game.to_form("That's not the correct word!")
+            return game.to_form(msg)
 
         #Handles illegal moves, doesn't add to attempt count
         if len(request.guess) != 1:
             return game.to_form('Please only enter a single letter.')
-        elif request.guess in game.guesses:
+        elif request.guess in game.guessed_letters:
             return game.to_form('You have already guessed ' + request.guess + '! Please guess a new letter.')
         elif request.guess not in "abcdefghijklmnopqrstuvwxyz":
             return game.to_form('Only letters are allowed as guesses!')
 
         game.attempts += 1
-        game.guesses += request.guess
+        game.guessed_letters += request.guess
 
         if request.guess in game.target_word:
             # Replace asterisks in word_so_far with correctly guessed letters
             for i in range(len(game.target_word)):
-                if game.target_word[i] in game.guesses:
+                if game.target_word[i] in game.guessed_letters:
                     game.word_so_far = game.word_so_far[:i] + game.target_word[i] + game.word_so_far[i+1:]
             msg = ('You guessed correctly!')
+            game.history.append(("(Guess: " + request.guess + ", Message: " + msg + ")").encode('utf-8'))
             game.put()
             return game.to_form(msg)
         else:
             #Calculate number of incorrect guesses
             incorrect_guesses = 0
-            for i in range(len(game.guesses)):
-                if game.guesses[i] not in game.target_word:
+            for i in range(len(game.guessed_letters)):
+                if game.guessed_letters[i] not in game.target_word:
                     incorrect_guesses += 1
             if incorrect_guesses > 5:
                 game.end_game(False)
+                msg = "You lose!The word was " + game.target_word
+                game.history.append(("(Guess: " + request.guess + ", Message: " + msg + ")").encode('utf-8'))
                 game.put()
-                return game.to_form("You lose!The word was " + game.target_word)
+                return game.to_form(msg)
             else:
                 msg = ('Incorrect guess! Letter ' + request.guess + ' is not in the word. You are ' + str(6 - incorrect_guesses) + ' incorrect guess(es) from HANGMAN.')
+                game.history.append(("(Guess: " + request.guess + ", Message: " + msg + ")").encode('utf-8'))
                 game.put()
                 return game.to_form(msg)
 
@@ -241,16 +249,19 @@ class HangmanApi(remote.Service):
         items = sorted(items, cmp = _compare_user_games, reverse = True)
         return UserForms(items=items)
 
-    @endpoints.method(request_message=USER_REQUEST,
-                      response_message=StringMessage,
-                      path='test_method',
-                      name='test_method',
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=HistoryForm,
+                      path='game/history',
+                      name='get_game_history',
                       http_method='GET')
-    def test_method(self, request):
-        """test_method"""
-        user = User.query(User.name == request.user_name).get()
-        msg = user.winning_percentage()
-        return StringMessage(message=msg)
+    def get_game_history(self, request):
+        """Retrieves an individual game history"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game:
+          return HistoryForm(items=game.history)
+        else:
+          raise endpoints.NotFoundException('Game not found!')
+
 
 
 api = endpoints.api_server([HangmanApi])

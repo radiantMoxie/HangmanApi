@@ -68,8 +68,10 @@ class Game(ndb.Model):
     target_word = ndb.StringProperty(required=True)
     attempts = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
-    guesses = ndb.StringProperty() #Cast this to int?
+    guessed_letters = ndb.StringProperty()
+    history = ndb.StringProperty(repeated = True)
     word_so_far = ndb.StringProperty()
+
 
 
     @classmethod
@@ -79,7 +81,8 @@ class Game(ndb.Model):
                     target_word=random.choice(words),
                     attempts=0,
                     game_over=False,
-                    guesses = "")
+                    guessed_letters = "",
+                    history = [])
         game.word_so_far = ("*" * len(game.target_word))
         game.put()
         return game
@@ -155,6 +158,10 @@ class ScoreForm(messages.Message):
 class ScoreForms(messages.Message):
     """Return multiple ScoreForms"""
     items = messages.MessageField(ScoreForm, 1, repeated=True)
+
+class HistoryForm(messages.Message):
+    """HistoryForm for outbound History information"""
+    items = messages.StringField(1, repeated = True)
 
 
 class StringMessage(messages.Message):
