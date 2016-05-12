@@ -104,11 +104,20 @@ class HangmanApi(remote.Service):
 
       #Handles illegal moves, doesn't add to attempt count
       if len(request.guess) != 1:
-        return game.to_form('Please only enter a single letter.')
+        msg = 'Please only enter a single letter.'
+        game.history.append("(Guess: " + request.guess + ", Message: " + msg + ")")
+        game.put()
+        return game.to_form(msg)
       elif request.guess in game.guessed_letters:
-        return game.to_form('You have already guessed ' + request.guess + '! Please guess a new letter.')
+        msg = 'You have already guessed ' + request.guess + '! Please guess a new letter.'
+        game.history.append("(Guess: " + request.guess + ", Message: " + msg + ")")
+        game.put()
+        return game.to_form(msg)
       elif request.guess not in "abcdefghijklmnopqrstuvwxyz":
-        return game.to_form('Only letters are allowed as guesses!')
+        msg = 'Only letters are allowed as guesses!'
+        game.history.append("(Guess: " + request.guess + ", Message: " + msg + ")")
+        game.put()
+        return game.to_form(msg)
 
       game.attempts += 1
       game.guessed_letters += request.guess
