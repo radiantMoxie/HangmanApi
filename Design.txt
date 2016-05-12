@@ -1,0 +1,35 @@
+1. What additional properties did you add to your models and why?
+
+User:
+In addition to the name and email, the User model now has the wins, gusses, and 
+winning_percentage properties. These are all present to allow the representation of
+a User and how they are doing in the game in a UserForm. Additionally a to_form 
+function was added to the User model.
+
+Game:
+Game now contains a target_word, list of guessed_letters, history, and word_so_far.
+Target_word is the word that the player is trying to guess. The list of guessed_letters 
+is used to determine legal moves (if a letter has been guessed before) and if the 
+guess is in the target_word. This could have been 2 properties (incorrect and correct guesses) but keeping it one property lessens the amount that the database needs to keep track of. Word_so_far is used to show the player which of their guesses have been correct and where those correct letters are placed in the target_word.
+
+2. What were some of the trade-offs or struggles you faced when implementing the 
+new game logic?
+
+Representing the word_so_far was a challenge since I wasn't writing a front-end UI. 
+First I tried underscores, but that seemed like a long line that didn't make clear how many
+letters were actually in the target_word. Then I tried hyphens, but they seemed too little. 
+Asterisks were the clear answer and I think they work well.
+
+The logic behind the actual scores took some time to implement. The more someone plays then
+the more guesses they will have and I didn't want to punish people who might play a lot. I do, however, want to reward people who win, and especially those who win more than they lose. Moving logic to ordering with these three properties in mind instead of just one I believe allows for a more realistic representation of the top players. Also, I added a penalty to cancelling a game so that players didn't just guess a bunch and quit right before they would end up with a loss on their record.
+
+That logic made get_user_rankings the hardest API for me to implement. Sorting these queries (whose available 
+applied methods change dramatically if you keep them a query or make them a list) was a challenge but also 
+a discovery of lambdas and comparators. 
+
+In general I found this assignment quite challenging and I don't believe that the course did a good job of preparing me for it. The course moves too quickly, especially toward the end, and the transition away from the conference app to the game app for the project is good in theory but I believe has many kinks to still be worked out. 
+
+
+
+
+
